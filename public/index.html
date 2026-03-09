@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Product Catalogue</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=IBM+Plex+Sans:wght@300;400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #f7f5f0; --surface: #ffffff; --border: #e2ddd6; --border2: #ccc8c0;
+      --text: #1a1814; --muted: #888078; --accent: #c8502a; --accent-l: #f0e8e4;
+      --success: #2d7a4f; --success-l: #e6f4ed; --error: #b83030; --error-l: #fdf0f0;
+      --tag: #f0ede8;
+    }
+    body { font-family: 'IBM Plex Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    header {
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      padding: 0 3rem; height: 64px; display: flex; align-items: center;
+      justify-content: space-between; position: sticky; top: 0; z-index: 50;
+    }
+    .logo { font-family: 'Playfair Display', serif; font-size: 1.3rem; font-weight: 700; }
+    .logo em { color: var(--accent); font-style: normal; }
+    .header-sub { font-size: 0.72rem; color: var(--muted); font-family: 'IBM Plex Mono', monospace; }
+
+    .azure-badge {
+      display: flex; align-items: center; gap: 0.4rem; font-size: 0.65rem;
+      color: var(--muted); border: 1px solid var(--border); border-radius: 100px;
+      padding: 0.25rem 0.7rem; font-family: 'IBM Plex Mono', monospace;
+    }
+    .azure-dot { width: 6px; height: 6px; background: #0089d6; border-radius: 50%; }
+
+    .page {
+      max-width: 1240px; margin: 0 auto; padding: 2.5rem 2rem;
+      display: grid; grid-template-columns: 340px 1fr; gap: 2rem; align-items: start;
+    }
+    @media(max-width:860px) { .page { grid-template-columns: 1fr; padding: 1.5rem 1rem; } header { padding: 0 1.5rem; } }
+
+    .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.8rem; position: sticky; top: 80px; }
+    .panel-heading { font-family: 'Playfair Display', serif; font-size: 1.1rem; font-weight: 600; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border); }
+
+    .field { margin-bottom: 1rem; }
+    label { display: block; font-size: 0.72rem; font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.4rem; }
+    input, select, textarea {
+      width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text);
+      border-radius: 6px; padding: 0.65rem 0.85rem; font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 0.88rem; outline: none; transition: border-color 0.15s, box-shadow 0.15s; -webkit-appearance: none;
+    }
+    input:focus, select:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-l); background: var(--surface); }
+    input.invalid, select.invalid { border-color: var(--error); box-shadow: 0 0 0 3px var(--error-l); }
+    select { cursor: pointer; }
+    textarea { resize: vertical; min-height: 72px; }
+    .field-error { font-size: 0.72rem; color: var(--error); margin-top: 0.3rem; display: none; }
+    .field-error.show { display: block; }
+
+    /* Upload zone */
+    .upload-zone {
+      border: 2px dashed var(--border); border-radius: 6px; padding: 1.2rem;
+      text-align: center; cursor: pointer; transition: all 0.15s; position: relative; overflow: hidden;
+    }
+    .upload-zone:hover { border-color: var(--accent); background: var(--accent-l); }
+    .upload-zone.has-file { border-color: var(--success); border-style: solid; background: var(--success-l); }
+    .upload-zone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+    .upload-icon { font-size: 1.5rem; margin-bottom: 0.3rem; }
+    .upload-hint { font-size: 0.73rem; color: var(--muted); }
+    .upload-name { font-size: 0.73rem; color: var(--success); margin-top: 0.25rem; font-weight: 500; }
+    .azure-hint { font-size: 0.65rem; color: #0089d6; margin-top: 0.3rem; }
+
+    .btn-submit {
+      width: 100%; margin-top: 0.5rem; padding: 0.8rem; background: var(--accent); color: #fff;
+      border: none; border-radius: 6px; font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 0.88rem; font-weight: 500; cursor: pointer; transition: background 0.15s, transform 0.12s;
+      display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+    }
+    .btn-submit:hover:not(:disabled) { background: #b04424; transform: translateY(-1px); }
+    .btn-submit:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+    .spinner { width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.35); border-top-color: #fff; border-radius: 50%; animation: spin 0.6s linear infinite; display: none; }
+    .btn-submit.busy .spinner { display: block; }
+
+    .form-msg { margin-top: 0.9rem; padding: 0.7rem 0.9rem; border-radius: 6px; font-size: 0.8rem; line-height: 1.5; display: none; }
+    .form-msg.show { display: block; animation: fadeIn 0.25s ease; }
+    .form-msg.ok  { background: var(--success-l); color: var(--success); border: 1px solid #b8dfc9; }
+    .form-msg.err { background: var(--error-l); color: var(--error); border: 1px solid #f0c0c0; }
+
+    .products-top { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.8rem; margin-bottom: 1rem; }
+    .section-heading { font-family: 'Playfair Display', serif; font-size: 1.1rem; font-weight: 600; display: flex; align-items: center; gap: 0.6rem; }
+    .badge { font-family: 'IBM Plex Mono', monospace; font-size: 0.68rem; background: var(--tag); border: 1px solid var(--border); color: var(--muted); padding: 0.15rem 0.55rem; border-radius: 100px; }
+    .search-box input { padding: 0.5rem 0.8rem; font-size: 0.82rem; min-width: 190px; background: var(--surface); }
+
+    .filters { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 1.2rem; }
+    .chip { padding: 0.22rem 0.7rem; border-radius: 100px; border: 1px solid var(--border); background: var(--surface); color: var(--muted); font-size: 0.72rem; font-family: 'IBM Plex Mono', monospace; cursor: pointer; transition: all 0.15s; }
+    .chip:hover { border-color: var(--accent); color: var(--accent); }
+    .chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; transition: box-shadow 0.2s, border-color 0.2s, transform 0.2s; animation: fadeIn 0.3s ease; }
+    .card:hover { box-shadow: 0 6px 24px rgba(0,0,0,0.08); border-color: var(--border2); transform: translateY(-2px); }
+
+    .card-img { width: 100%; aspect-ratio: 4/3; background: var(--tag); display: flex; align-items: center; justify-content: center; font-size: 2rem; color: var(--muted); overflow: hidden; }
+    .card-img img { width: 100%; height: 100%; object-fit: cover; }
+
+    .card-top { padding: 0.9rem 1rem 0; display: flex; justify-content: space-between; align-items: flex-start; }
+    .cat-pill { font-size: 0.63rem; font-family: 'IBM Plex Mono', monospace; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); background: var(--accent-l); padding: 0.18rem 0.55rem; border-radius: 100px; }
+    .del-btn { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 1rem; padding: 0.1rem 0.2rem; border-radius: 4px; transition: color 0.15s, background 0.15s; line-height: 1; }
+    .del-btn:hover { color: var(--error); background: var(--error-l); }
+
+    .card-body { padding: 0.7rem 1rem 1rem; flex: 1; display: flex; flex-direction: column; }
+    .card-name { font-family: 'Playfair Display', serif; font-size: 1rem; font-weight: 600; line-height: 1.3; margin-bottom: 0.4rem; }
+    .card-desc { font-size: 0.78rem; color: var(--muted); line-height: 1.55; flex: 1; margin-bottom: 0.8rem; }
+    .card-footer { display: flex; align-items: center; justify-content: space-between; padding-top: 0.75rem; border-top: 1px solid var(--border); }
+    .price { font-family: 'IBM Plex Mono', monospace; font-size: 1rem; font-weight: 500; }
+    .card-date { font-size: 0.65rem; color: var(--muted); font-family: 'IBM Plex Mono', monospace; }
+
+    .state-box { grid-column: 1/-1; text-align: center; padding: 4rem 1rem; color: var(--muted); }
+    .state-box .ico { font-size: 2.2rem; margin-bottom: 0.7rem; opacity: 0.5; }
+    .state-box p { font-size: 0.83rem; line-height: 1.6; }
+    .loading-ring { grid-column: 1/-1; display: flex; justify-content: center; padding: 3rem; }
+    .ring { width: 28px; height: 28px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.65s linear infinite; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Product <em>Catalogue</em></div>
+  <div style="display:flex;align-items:center;gap:1rem;">
+    <div class="header-sub">Assignment 2 — Cloud Computing</div>
+    <div class="azure-badge"><div class="azure-dot"></div>GCP Powered</div>
+  </div>
+</header>
+
+<div class="page">
+
+  <!-- FORM -->
+  <aside class="panel">
+    <div class="panel-heading">Add New Product</div>
+    <form id="pForm" novalidate>
+
+      <div class="field">
+        <label>Product Name *</label>
+        <input id="fName" type="text" placeholder="e.g. Wireless Headphones" maxlength="100" autocomplete="off" />
+        <div class="field-error" id="errName"></div>
+      </div>
+
+      <div class="field">
+        <label>Category *</label>
+        <select id="fCat">
+          <option value="">— Select a category —</option>
+          <option>Electronics</option>
+          <option>Clothing</option>
+          <option>Food &amp; Drink</option>
+          <option>Books</option>
+          <option>Sports</option>
+          <option>Home &amp; Garden</option>
+          <option>Toys</option>
+          <option>Other</option>
+        </select>
+        <div class="field-error" id="errCat"></div>
+      </div>
+
+      <div class="field">
+        <label>Price (USD) *</label>
+        <input id="fPrice" type="number" placeholder="0.00" min="0" max="1000000" step="0.01" />
+        <div class="field-error" id="errPrice"></div>
+      </div>
+
+      <div class="field">
+        <label>Description <span style="font-size:0.65rem;font-weight:300;text-transform:none;letter-spacing:0">(optional)</span></label>
+        <textarea id="fDesc" placeholder="Brief description of the product…"></textarea>
+      </div>
+
+      <div class="field">
+        <label>Product Image <span style="font-size:0.65rem;font-weight:300;text-transform:none;letter-spacing:0">(optional)</span></label>
+        <div class="upload-zone" id="uploadZone">
+          <input type="file" id="fImg" accept="image/*" />
+          <div class="upload-icon">📷</div>
+          <div class="upload-hint">Click or drag image here · Max 5MB</div>
+          <div class="upload-name" id="fImgName"></div>
+        </div>
+        <div class="azure-hint">☁ Stored in GCP Storage</div>
+      </div>
+
+      <button type="submit" class="btn-submit" id="submitBtn">
+        <div class="spinner"></div>
+        <span id="btnText">Add Product</span>
+      </button>
+      <div class="form-msg" id="formMsg"></div>
+    </form>
+  </aside>
+
+  <!-- PRODUCTS -->
+  <main>
+    <div class="products-top">
+      <div class="section-heading">All Products <span class="badge" id="countBadge">0</span></div>
+      <div class="search-box"><input type="text" id="searchInput" placeholder="Search products…" autocomplete="off" /></div>
+    </div>
+    <div class="filters" id="filterRow"><button class="chip active" data-cat="All">All</button></div>
+    <div class="grid" id="grid"><div class="loading-ring"><div class="ring"></div></div></div>
+  </main>
+
+</div>
+
+<script>
+const API = '/api/products';
+let products = [], activeCat = 'All', searchQ = '';
+
+function fmt(d) { return new Date(d).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}); }
+
+async function loadProducts() {
+  try {
+    const r = await fetch(API);
+    if (!r.ok) throw new Error();
+    products = await r.json();
+    buildFilters(); renderGrid();
+  } catch {
+    document.getElementById('grid').innerHTML = `<div class="state-box"><div class="ico">⚠️</div><p>Could not load products.</p></div>`;
+  }
+}
+
+function buildFilters() {
+  const cats = ['All', ...new Set(products.map(p => p.category))];
+  const row = document.getElementById('filterRow');
+  row.innerHTML = cats.map(c => `<button class="chip ${c===activeCat?'active':''}" data-cat="${c}">${c}</button>`).join('');
+  row.querySelectorAll('.chip').forEach(btn => btn.addEventListener('click', () => {
+    activeCat = btn.dataset.cat;
+    row.querySelectorAll('.chip').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderGrid();
+  }));
+}
+
+function renderGrid() {
+  let list = products;
+  if (activeCat !== 'All') list = list.filter(p => p.category === activeCat);
+  if (searchQ) {
+    const q = searchQ.toLowerCase();
+    list = list.filter(p => p.name.toLowerCase().includes(q) || (p.description||'').toLowerCase().includes(q) || p.category.toLowerCase().includes(q));
+  }
+  document.getElementById('countBadge').textContent = list.length;
+  const grid = document.getElementById('grid');
+  if (!list.length) { grid.innerHTML = `<div class="state-box"><div class="ico">📦</div><p>No products found.</p></div>`; return; }
+  grid.innerHTML = list.map(p => `
+    <div class="card">
+      <div class="card-img">
+        <img src="${p.image_url}" alt="${p.name}" loading="lazy" onerror="this.src='https://placehold.co/400x300?text=No+Image'">
+      </div>
+      <div class="card-top">
+        <span class="cat-pill">${p.category}</span>
+        <button class="del-btn" onclick="deleteProduct('${p.id}')">✕</button>
+      </div>
+      <div class="card-body">
+        <div class="card-name">${p.name}</div>
+        <div class="card-desc">${p.description || '<span style="opacity:0.45;font-style:italic">No description</span>'}</div>
+        <div class="card-footer">
+          <div class="price">$${Number(p.price).toFixed(2)}</div>
+          <div class="card-date">${fmt(p.created_at)}</div>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+async function deleteProduct(id) {
+  if (!confirm('Remove this product?')) return;
+  try {
+    await fetch(`${API}/${id}`, { method: 'DELETE' });
+    products = products.filter(p => String(p.id) !== String(id));
+    buildFilters(); renderGrid();
+  } catch { alert('Failed to delete.'); }
+}
+
+document.getElementById('pForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const name  = document.getElementById('fName').value.trim();
+  const cat   = document.getElementById('fCat').value;
+  const price = document.getElementById('fPrice').value;
+  const desc  = document.getElementById('fDesc').value.trim();
+  const img   = document.getElementById('fImg').files[0];
+
+  let valid = true;
+  function setErr(inputId, errId, msg) {
+    const inp = document.getElementById(inputId), err = document.getElementById(errId);
+    if (msg) { inp.classList.add('invalid'); err.textContent = msg; err.classList.add('show'); valid = false; }
+    else     { inp.classList.remove('invalid'); err.classList.remove('show'); }
+  }
+  setErr('fName',  'errName',  !name ? 'Product name is required.' : name.length < 2 ? 'Min 2 characters.' : name.length > 100 ? 'Max 100 characters.' : null);
+  setErr('fCat',   'errCat',   !cat ? 'Please select a category.' : null);
+  setErr('fPrice', 'errPrice', price==='' ? 'Price is required.' : isNaN(+price) ? 'Must be a number.' : +price<0 ? 'Cannot be negative.' : +price>1000000 ? 'Too high.' : null);
+  if (!valid) return;
+
+  const btn = document.getElementById('submitBtn'), msg = document.getElementById('formMsg');
+  btn.disabled = true; btn.classList.add('busy');
+  document.getElementById('btnText').textContent = 'Saving…';
+  msg.className = 'form-msg';
+
+  try {
+    // Use FormData to support image upload
+    const fd = new FormData();
+    fd.append('name', name); fd.append('category', cat);
+    fd.append('price', price); fd.append('description', desc);
+    if (img) fd.append('image', img);
+
+    const r = await fetch(API, { method: 'POST', body: fd });
+    const data = await r.json();
+    if (!r.ok) { msg.textContent = data.error || 'Something went wrong.'; msg.className = 'form-msg err show'; }
+    else {
+      msg.textContent = `✓ "${data.name}" added successfully${data.image_url ? ' with image' : ''}.`;
+      msg.className = 'form-msg ok show';
+      document.getElementById('pForm').reset();
+      document.getElementById('uploadZone').classList.remove('has-file');
+      document.getElementById('fImgName').textContent = '';
+      products.unshift(data); buildFilters(); renderGrid();
+    }
+  } catch {
+    msg.textContent = 'Network error. Is the server running?';
+    msg.className = 'form-msg err show';
+  } finally {
+    btn.disabled = false; btn.classList.remove('busy');
+    document.getElementById('btnText').textContent = 'Add Product';
+  }
+});
+
+document.getElementById('fImg').addEventListener('change', e => {
+  const f = e.target.files[0];
+  document.getElementById('uploadZone').classList.toggle('has-file', !!f);
+  document.getElementById('fImgName').textContent = f ? `✓ ${f.name}` : '';
+});
+
+document.getElementById('searchInput').addEventListener('input', e => { searchQ = e.target.value.trim(); renderGrid(); });
+
+loadProducts();
+</script>
+</body>
+</html>
